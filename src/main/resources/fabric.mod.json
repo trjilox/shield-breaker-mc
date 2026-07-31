@@ -1,0 +1,19 @@
+{
+    "schemaVersion": 1,
+    "id": "shieldbreaker",
+    "version": "1.0.0",
+    "name": "Shield Breaker",
+    "description": "INSERT tusuyla kalkan kirmayi ac/kapat",
+    "authors": ["CarbonE"],
+    "license": "MIT",
+    "environment": "client",
+    "entrypoints": {
+        "main": ["com.shieldbreaker.ShieldBreakerMod"]
+    },
+    "depends": {
+        "fabricloader": ">=0.16.0",
+        "minecraft": "~1.21.8",
+        "java": ">=21",
+        "fabric-api": "*"
+    }
+}
