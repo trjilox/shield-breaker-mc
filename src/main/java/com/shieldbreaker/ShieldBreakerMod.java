@@ -23,7 +23,7 @@ public class ShieldBreakerMod implements ModInitializer {
     private static KeyBinding overlayKey;
     private static final MinecraftClient mc = MinecraftClient.getInstance();
     private static final double FOV = 90.0;
-    private static final double RANGE = 3.0;
+    private static final double RANGE = 2.8;
 
     @Override
     public void onInitialize() {
@@ -37,7 +37,7 @@ public class ShieldBreakerMod implements ModInitializer {
         overlayKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
             "Overlay Ac/Kapat",
             InputUtil.Type.KEYSYM,
-            GLFW.GLFW_KEY_APOSTROPHE,,
+            GLFW.GLFW_KEY_APOSTROPHE,
             "Shield Breaker"
         ));
 
@@ -46,12 +46,16 @@ public class ShieldBreakerMod implements ModInitializer {
                 enabled = !enabled;
                 String msg = enabled ? "§aACIK" : "§cKAPALI";
                 if (mc.player != null) {
-                    mc.player.sendMessage(Text.of("§6[ShieldBreaker] §eDurum: " + msg), true);
+                    mc.player.sendMessage(Text.of("§6[ShieldBreaker] §eKalkan Kirma: " + msg), true);
                 }
             }
             
             if (overlayKey.wasPressed()) {
                 showOverlay = !showOverlay;
+                String msg = showOverlay ? "§aACIK" : "§cKAPALI";
+                if (mc.player != null) {
+                    mc.player.sendMessage(Text.of("§6[ShieldBreaker] §eFOV Overlay: " + msg), true);
+                }
             }
 
             if (enabled && mc.player != null && mc.interactionManager != null) {
@@ -69,7 +73,6 @@ public class ShieldBreakerMod implements ModInitializer {
             int centerY = drawContext.getScaledWindowHeight() / 2;
             int radius = (int)((FOV / 90.0) * 150);
             
-            // FOV dairesi
             for (int i = 0; i < 360; i++) {
                 double rad = Math.toRadians(i);
                 int x = centerX + (int)(Math.cos(rad) * radius);
@@ -79,16 +82,14 @@ public class ShieldBreakerMod implements ModInitializer {
                 }
             }
             
-            // Artı işareti
             int color = enabled ? 0xFFFF0000 : 0xFFFFFFFF;
             drawContext.fill(centerX - 1, centerY - 8, centerX + 1, centerY + 8, color);
             drawContext.fill(centerX - 8, centerY - 1, centerX + 8, centerY + 1, color);
             
-            // Yazılar
             TextRenderer renderer = mc.textRenderer;
             drawContext.drawText(renderer, Text.of(enabled ? "§aSHIELD BREAKER: ACIK" : "§cSHIELD BREAKER: KAPALI"), 10, 10, 0xFFFFFFFF, true);
             drawContext.drawText(renderer, Text.of("§7FOV: " + (int)FOV + "° | Range: " + RANGE), 10, 25, 0xFFFFFFFF, true);
-            drawContext.drawText(renderer, Text.of("§7[HOME] Overlay | [INSERT] Ac/Kapat"), 10, 55, 0xFFAAAAAA, true);
+            drawContext.drawText(renderer, Text.of("§7['] Overlay | [INSERT] Ac/Kapat"), 10, 55, 0xFFAAAAAA, true);
         });
     }
 
