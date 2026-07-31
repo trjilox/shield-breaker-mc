@@ -3,24 +3,30 @@ package com.shieldbreaker;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.client.font.TextRenderer;
+import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.option.KeyBinding;
+import net.minecraft.client.render.RenderTickCounter;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.AxeItem;
 import net.minecraft.text.Text;
-import net.minecraft.util.Hand;
+import net.minecraft.util.math.Vec3d;
 import org.lwjgl.glfw.GLFW;
+import java.awt.Color;
 
 public class ShieldBreakerMod implements ModInitializer {
 
     public static boolean enabled = false;
+    public static boolean showOverlay = true;
     private static KeyBinding toggleKey;
+    private static KeyBinding overlayKey;
     private static final MinecraftClient mc = MinecraftClient.getInstance();
+    private static final double FOV = 90.0;
+    private static final double RANGE = 2.8;
     private static long lastBreak = 0;
-    private static long nextBreak = 0;
-    private static PlayerEntity currentTarget = null;
 
     @Override
     public void onInitialize() {
@@ -28,7 +34,14 @@ public class ShieldBreakerMod implements ModInitializer {
             "Shield Breaker",
             InputUtil.Type.KEYSYM,
             GLFW.GLFW_KEY_INSERT,
-            "Shield Breaker Mod"
+            "Shield Breaker"
+        ));
+        
+        overlayKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
+            "Overlay Ac/Kapat",
+            InputUtil.Type.KEYSYM,
+            GLFW.GLFW_KEY_HOME,
+            "Shield Breaker"
         ));
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
@@ -39,47 +52,98 @@ public class ShieldBreakerMod implements ModInitializer {
                     mc.player.sendMessage(Text.of("§6[ShieldBreaker] §eDurum: " + msg), true);
                 }
             }
+            
+            if (overlayKey.wasPressed()) {
+                showOverlay = !showOverlay;
+            }
 
             if (enabled && mc.player != null && mc.interactionManager != null) {
-                long now = System.currentTimeMillis();
-                
-                if (currentTarget != null && now >= nextBreak) {
-                    doBreakShield(currentTarget);
-                    currentTarget = null;
-                }
-                
-                if (currentTarget == null && now - lastBreak > 1000) {
-                    PlayerEntity target = findTarget();
-                    if (target != null && target.isBlocking()) {
-                        currentTarget = target;
-                        nextBreak = now + 100;
-                    }
+                PlayerEntity target = findTargetInFov();
+                if (target != null && target.isBlocking()) {
+                    breakShield(target);
                 }
             }
         });
-    }
-
-    private PlayerEntity findTarget() {
-        if (mc.world == null || mc.player == null) return null;
-        double closest = 4.0;
-        PlayerEntity closestPlayer = null;
-        for (PlayerEntity player : mc.world.getPlayers()) {
-            if (player == mc.player) continue;
-            if (player.isBlocking()) {
-                double dist = mc.player.distanceTo(player);
-                if (dist < closest) {
-                    closest = dist;
-                    closestPlayer = player;
+        
+        // FOV overlay render
+        HudRenderCallback.EVENT.register((drawContext, tickCounter) -> {
+            if (!showOverlay || mc.player == null) return;
+            
+            int centerX = drawContext.getScaledWindowWidth() / 2;
+            int centerY = drawContext.getScaledWindowHeight() / 2;
+            
+            // FOV dairesi çiz
+            int radius = (int)((FOV / 90.0) * 150);
+            drawContext.getMatrices().push();
+            
+            // Daire
+            for (int i = 0; i < 360; i++) {
+                double rad = Math.toRadians(i);
+                int x = centerX + (int)(Math.cos(rad) * radius);
+                int y = centerY + (int)(Math.sin(rad) * radius);
+                
+                if (i % 2 == 0) {
+                    drawContext.fill(x, y, x + 1, y + 1, 0x3000FF00);
                 }
             }
-        }
-        return closestPlayer;
+            
+            // Artı işareti
+            drawContext.fill(centerX - 1, centerY - 8, centerX + 1, centerY + 8, enabled ? 0xFFFF0000 : 0xFFFFFFFF);
+            drawContext.fill(centerX - 8, centerY - 1, centerX + 8, centerY + 1, enabled ? 0xFFFF0000 : 0xFFFFFFFF);
+            
+            // Durum yazısı
+            TextRenderer renderer = mc.textRenderer;
+            String status = enabled ? "§aSHIELD BREAKER: ACIK" : "§cSHIELD BREAKER: KAPALI";
+            String fovText = "§7FOV: " + (int)FOV + "°";
+            
+            drawContext.drawText(renderer, Text.of(status), 10, 10, 0xFFFFFFFF, true);
+            drawContext.drawText(renderer, Text.of(fovText), 10, 25, 0xFFFFFFFF, true);
+            drawContext.drawText(renderer, Text.of("§7[HOME] Overlay"), 10, 55, 0xFFAAAAAA, true);
+            drawContext.drawText(renderer, Text.of("§7[INSERT] Ac/Kapat"), 10, 70, 0xFFAAAAAA, true);
+            
+            drawContext.getMatrices().pop();
+        });
     }
 
-    private void doBreakShield(PlayerEntity target) {
+    private boolean isInFov(PlayerEntity target) {
+        if (mc.player == null) return false;
+        
+        Vec3d playerPos = mc.player.getEyePos();
+        Vec3d targetPos = target.getEyePos();
+        Vec3d toTarget = targetPos.subtract(playerPos).normalize();
+        Vec3d lookVec = mc.player.getRotationVector();
+        
+        double dot = toTarget.dotProduct(lookVec);
+        double angle = Math.acos(Math.max(-1, Math.min(1, dot))) * (180.0 / Math.PI);
+        
+        return angle <= FOV / 2.0;
+    }
+
+    private PlayerEntity findTargetInFov() {
+        if (mc.world == null || mc.player == null) return null;
+        
+        PlayerEntity best = null;
+        double bestDist = RANGE;
+        
+        for (PlayerEntity player : mc.world.getPlayers()) {
+            if (player == mc.player) continue;
+            if (!player.isBlocking()) continue;
+            
+            double dist = mc.player.distanceTo(player);
+            if (dist > RANGE) continue;
+            if (!isInFov(player)) continue;
+            
+            if (dist < bestDist) {
+                bestDist = dist;
+                best = player;
+            }
+        }
+        return best;
+    }
+
+    private void breakShield(PlayerEntity target) {
         if (mc.player == null || mc.interactionManager == null) return;
         
-        // Baltayı bul - anlık geçiş
         int axeSlot = -1;
         for (int i = 0; i < 9; i++) {
             if (mc.player.getInventory().getStack(i).getItem() instanceof AxeItem) {
@@ -90,13 +154,9 @@ public class ShieldBreakerMod implements ModInitializer {
         
         if (axeSlot == -1) return;
         
-        // Direkt baltayla vur - slot değiştir
         int old = mc.player.getInventory().selectedSlot;
         mc.player.getInventory().selectedSlot = axeSlot;
         mc.interactionManager.attackEntity(mc.player, target);
         mc.player.getInventory().selectedSlot = old;
-        
-        lastBreak = System.currentTimeMillis();
-        currentTarget = null;
     }
 }
