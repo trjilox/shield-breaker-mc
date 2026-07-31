@@ -37,7 +37,7 @@ public class ShieldBreakerMod implements ModInitializer {
         overlayKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
             "Overlay Ac/Kapat",
             InputUtil.Type.KEYSYM,
-            GLFW.GLFW_KEY_HOME,
+            GLFW.GLFW_KEY_APOSTROPHE,,
             "Shield Breaker"
         ));
 
