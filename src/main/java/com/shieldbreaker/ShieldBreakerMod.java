@@ -30,7 +30,7 @@ public class ShieldBreakerMod implements ModInitializer {
         toggleKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
             "Shield Breaker",
             InputUtil.Type.KEYSYM,
-            GLFW.GLFW_KEY_INSERT,
+            GLFW.GLFW_KEY_P,
             "Shield Breaker"
         ));
         
