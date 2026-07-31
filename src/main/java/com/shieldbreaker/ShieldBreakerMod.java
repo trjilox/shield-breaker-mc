@@ -8,14 +8,12 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.option.KeyBinding;
-import net.minecraft.client.render.RenderTickCounter;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.AxeItem;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.Vec3d;
 import org.lwjgl.glfw.GLFW;
-import java.awt.Color;
 
 public class ShieldBreakerMod implements ModInitializer {
 
@@ -26,7 +24,6 @@ public class ShieldBreakerMod implements ModInitializer {
     private static final MinecraftClient mc = MinecraftClient.getInstance();
     private static final double FOV = 90.0;
     private static final double RANGE = 2.8;
-    private static long lastBreak = 0;
 
     @Override
     public void onInitialize() {
@@ -65,43 +62,33 @@ public class ShieldBreakerMod implements ModInitializer {
             }
         });
         
-        // FOV overlay render
         HudRenderCallback.EVENT.register((drawContext, tickCounter) -> {
             if (!showOverlay || mc.player == null) return;
             
             int centerX = drawContext.getScaledWindowWidth() / 2;
             int centerY = drawContext.getScaledWindowHeight() / 2;
-            
-            // FOV dairesi çiz
             int radius = (int)((FOV / 90.0) * 150);
-            drawContext.getMatrices().push();
             
-            // Daire
+            // FOV dairesi
             for (int i = 0; i < 360; i++) {
                 double rad = Math.toRadians(i);
                 int x = centerX + (int)(Math.cos(rad) * radius);
                 int y = centerY + (int)(Math.sin(rad) * radius);
-                
                 if (i % 2 == 0) {
                     drawContext.fill(x, y, x + 1, y + 1, 0x3000FF00);
                 }
             }
             
             // Artı işareti
-            drawContext.fill(centerX - 1, centerY - 8, centerX + 1, centerY + 8, enabled ? 0xFFFF0000 : 0xFFFFFFFF);
-            drawContext.fill(centerX - 8, centerY - 1, centerX + 8, centerY + 1, enabled ? 0xFFFF0000 : 0xFFFFFFFF);
+            int color = enabled ? 0xFFFF0000 : 0xFFFFFFFF;
+            drawContext.fill(centerX - 1, centerY - 8, centerX + 1, centerY + 8, color);
+            drawContext.fill(centerX - 8, centerY - 1, centerX + 8, centerY + 1, color);
             
-            // Durum yazısı
+            // Yazılar
             TextRenderer renderer = mc.textRenderer;
-            String status = enabled ? "§aSHIELD BREAKER: ACIK" : "§cSHIELD BREAKER: KAPALI";
-            String fovText = "§7FOV: " + (int)FOV + "°";
-            
-            drawContext.drawText(renderer, Text.of(status), 10, 10, 0xFFFFFFFF, true);
-            drawContext.drawText(renderer, Text.of(fovText), 10, 25, 0xFFFFFFFF, true);
-            drawContext.drawText(renderer, Text.of("§7[HOME] Overlay"), 10, 55, 0xFFAAAAAA, true);
-            drawContext.drawText(renderer, Text.of("§7[INSERT] Ac/Kapat"), 10, 70, 0xFFAAAAAA, true);
-            
-            drawContext.getMatrices().pop();
+            drawContext.drawText(renderer, Text.of(enabled ? "§aSHIELD BREAKER: ACIK" : "§cSHIELD BREAKER: KAPALI"), 10, 10, 0xFFFFFFFF, true);
+            drawContext.drawText(renderer, Text.of("§7FOV: " + (int)FOV + "° | Range: " + RANGE), 10, 25, 0xFFFFFFFF, true);
+            drawContext.drawText(renderer, Text.of("§7[HOME] Overlay | [INSERT] Ac/Kapat"), 10, 55, 0xFFAAAAAA, true);
         });
     }
 
