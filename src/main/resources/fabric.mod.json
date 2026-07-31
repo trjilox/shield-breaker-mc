@@ -10,9 +10,8 @@
         "main": ["com.shieldbreaker.ShieldBreakerMod"]
     },
     "depends": {
-        "fabricloader": ">=0.15.11",
-        "minecraft": "~1.21.1",
-        "java": ">=21",
-        "fabric-api": "*"
+        "fabricloader": ">=0.16.0",
+        "minecraft": "~1.21.8",
+        "java": ">=21"
     }
 }
