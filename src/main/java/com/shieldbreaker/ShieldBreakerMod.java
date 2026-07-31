@@ -4,35 +4,23 @@ import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.AxeItem;
 import net.minecraft.text.Text;
 import net.minecraft.util.Hand;
 import org.lwjgl.glfw.GLFW;
-import java.lang.reflect.Field;
 
 public class ShieldBreakerMod implements ModInitializer {
 
     public static boolean enabled = false;
     private static KeyBinding toggleKey;
     private static final MinecraftClient mc = MinecraftClient.getInstance();
-    private int axeSlot = -1;
-    private int previousSlot = -1;
-    private boolean swapped = false;
-    private long swapTime = 0;
-    private static Field selectedSlotField;
-
-    static {
-        try {
-            selectedSlotField = PlayerInventory.class.getDeclaredField("selectedSlot");
-            selectedSlotField.setAccessible(true);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
+    private static long lastBreak = 0;
+    private static long nextBreak = 0;
+    private static PlayerEntity currentTarget = null;
 
     @Override
     public void onInitialize() {
@@ -53,30 +41,22 @@ public class ShieldBreakerMod implements ModInitializer {
             }
 
             if (enabled && mc.player != null && mc.interactionManager != null) {
-                PlayerEntity target = findTarget();
-                if (target != null && target.isBlocking()) {
-                    breakShield(target);
-                } else {
-                    resetSlot();
+                long now = System.currentTimeMillis();
+                
+                if (currentTarget != null && now >= nextBreak) {
+                    doBreakShield(currentTarget);
+                    currentTarget = null;
                 }
-            } else {
-                resetSlot();
+                
+                if (currentTarget == null && now - lastBreak > 1000) {
+                    PlayerEntity target = findTarget();
+                    if (target != null && target.isBlocking()) {
+                        currentTarget = target;
+                        nextBreak = now + 100;
+                    }
+                }
             }
         });
-    }
-
-    private void setSlot(int slot) {
-        try {
-            selectedSlotField.setInt(mc.player.getInventory(), slot);
-        } catch (Exception e) {}
-    }
-
-    private int getSlot() {
-        try {
-            return selectedSlotField.getInt(mc.player.getInventory());
-        } catch (Exception e) {
-            return 0;
-        }
     }
 
     private PlayerEntity findTarget() {
@@ -96,9 +76,11 @@ public class ShieldBreakerMod implements ModInitializer {
         return closestPlayer;
     }
 
-    private void breakShield(PlayerEntity target) {
-        if (mc.interactionManager == null || mc.player == null) return;
+    private void doBreakShield(PlayerEntity target) {
+        if (mc.player == null || mc.interactionManager == null) return;
         
+        // Baltayı bul - anlık geçiş
+        int axeSlot = -1;
         for (int i = 0; i < 9; i++) {
             if (mc.player.getInventory().getStack(i).getItem() instanceof AxeItem) {
                 axeSlot = i;
@@ -108,27 +90,13 @@ public class ShieldBreakerMod implements ModInitializer {
         
         if (axeSlot == -1) return;
         
-        if (!swapped) {
-            previousSlot = getSlot();
-            setSlot(axeSlot);
-            swapped = true;
-            swapTime = System.currentTimeMillis();
-        }
+        // Direkt baltayla vur - slot değiştir
+        int old = mc.player.getInventory().selectedSlot;
+        mc.player.getInventory().selectedSlot = axeSlot;
+        mc.interactionManager.attackEntity(mc.player, target);
+        mc.player.getInventory().selectedSlot = old;
         
-        if (System.currentTimeMillis() - swapTime > 100) {
-            mc.interactionManager.attackEntity(mc.player, target);
-            mc.player.swingHand(Hand.MAIN_HAND);
-            resetSlot();
-            swapTime = System.currentTimeMillis() + 500;
-        }
-    }
-
-    private void resetSlot() {
-        if (swapped && previousSlot != -1 && mc.player != null) {
-            setSlot(previousSlot);
-            swapped = false;
-            previousSlot = -1;
-            axeSlot = -1;
-        }
+        lastBreak = System.currentTimeMillis();
+        currentTarget = null;
     }
 }
