@@ -30,14 +30,14 @@ public class ShieldBreakerMod implements ModInitializer {
         toggleKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
             "Shield Breaker",
             InputUtil.Type.KEYSYM,
-            GLFW.GLFW_KEY_P,
+            GLFW.GLFW_KEY_INSERT,
             "Shield Breaker"
         ));
         
         overlayKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
             "Overlay Ac/Kapat",
             InputUtil.Type.KEYSYM,
-            GLFW.GLFW_KEY_APOSTROPHE,
+            GLFW.GLFW_KEY_Z,
             "Shield Breaker"
         ));
 
@@ -89,7 +89,7 @@ public class ShieldBreakerMod implements ModInitializer {
             TextRenderer renderer = mc.textRenderer;
             drawContext.drawText(renderer, Text.of(enabled ? "§aSHIELD BREAKER: ACIK" : "§cSHIELD BREAKER: KAPALI"), 10, 10, 0xFFFFFFFF, true);
             drawContext.drawText(renderer, Text.of("§7FOV: " + (int)FOV + "° | Range: " + RANGE), 10, 25, 0xFFFFFFFF, true);
-            drawContext.drawText(renderer, Text.of("§7['] Overlay | [INSERT] Ac/Kapat"), 10, 55, 0xFFAAAAAA, true);
+            drawContext.drawText(renderer, Text.of("§7[Z] Overlay | [INSERT] Ac/Kapat"), 10, 55, 0xFFAAAAAA, true);
         });
     }
 
