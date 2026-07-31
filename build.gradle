@@ -33,3 +33,6 @@ java {
         languageVersion = JavaLanguageVersion.of(21)
     }
 }
+loom {
+    accessWidenerPath = file("src/main/resources/shieldbreaker.accesswidener")
+}
