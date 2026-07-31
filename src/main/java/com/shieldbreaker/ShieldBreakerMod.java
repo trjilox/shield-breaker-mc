@@ -7,6 +7,7 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.AxeItem;
 import net.minecraft.text.Text;
 import net.minecraft.util.Hand;
@@ -72,19 +73,25 @@ public class ShieldBreakerMod implements ModInitializer {
 
     private void breakShield(PlayerEntity target) {
         if (mc.interactionManager == null || mc.player == null) return;
+        
+        PlayerInventory inv = mc.player.getInventory();
+        
         for (int i = 0; i < 9; i++) {
-            if (mc.player.getInventory().getStack(i).getItem() instanceof AxeItem) {
+            if (inv.getStack(i).getItem() instanceof AxeItem) {
                 axeSlot = i;
                 break;
             }
         }
+        
         if (axeSlot == -1) return;
+        
         if (!swapped) {
-            previousSlot = mc.player.getInventory().selectedSlot;
-            mc.player.getInventory().selectedSlot = axeSlot;
+            previousSlot = inv.selectedSlot;
+            inv.selectedSlot = axeSlot;
             swapped = true;
             swapTime = System.currentTimeMillis();
         }
+        
         if (System.currentTimeMillis() - swapTime > 100) {
             mc.interactionManager.attackEntity(mc.player, target);
             mc.player.swingHand(Hand.MAIN_HAND);
