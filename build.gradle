@@ -26,6 +26,9 @@ processResources {
 }
 
 java {
+    loom {
+    accessWidenerPath = file("src/main/resources/shieldbreaker.accesswidener")
+}
     toolchain {
         languageVersion = JavaLanguageVersion.of(21)
     }
