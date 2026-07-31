@@ -12,6 +12,7 @@ import net.minecraft.item.AxeItem;
 import net.minecraft.text.Text;
 import net.minecraft.util.Hand;
 import org.lwjgl.glfw.GLFW;
+import java.lang.reflect.Field;
 
 public class ShieldBreakerMod implements ModInitializer {
 
@@ -22,6 +23,16 @@ public class ShieldBreakerMod implements ModInitializer {
     private int previousSlot = -1;
     private boolean swapped = false;
     private long swapTime = 0;
+    private static Field selectedSlotField;
+
+    static {
+        try {
+            selectedSlotField = PlayerInventory.class.getDeclaredField("selectedSlot");
+            selectedSlotField.setAccessible(true);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 
     @Override
     public void onInitialize() {
@@ -54,6 +65,20 @@ public class ShieldBreakerMod implements ModInitializer {
         });
     }
 
+    private void setSlot(int slot) {
+        try {
+            selectedSlotField.setInt(mc.player.getInventory(), slot);
+        } catch (Exception e) {}
+    }
+
+    private int getSlot() {
+        try {
+            return selectedSlotField.getInt(mc.player.getInventory());
+        } catch (Exception e) {
+            return 0;
+        }
+    }
+
     private PlayerEntity findTarget() {
         if (mc.world == null || mc.player == null) return null;
         double closest = 4.0;
@@ -74,10 +99,8 @@ public class ShieldBreakerMod implements ModInitializer {
     private void breakShield(PlayerEntity target) {
         if (mc.interactionManager == null || mc.player == null) return;
         
-        PlayerInventory inv = mc.player.getInventory();
-        
         for (int i = 0; i < 9; i++) {
-            if (inv.getStack(i).getItem() instanceof AxeItem) {
+            if (mc.player.getInventory().getStack(i).getItem() instanceof AxeItem) {
                 axeSlot = i;
                 break;
             }
@@ -86,8 +109,8 @@ public class ShieldBreakerMod implements ModInitializer {
         if (axeSlot == -1) return;
         
         if (!swapped) {
-            previousSlot = inv.selectedSlot;
-            inv.selectedSlot = axeSlot;
+            previousSlot = getSlot();
+            setSlot(axeSlot);
             swapped = true;
             swapTime = System.currentTimeMillis();
         }
@@ -102,7 +125,7 @@ public class ShieldBreakerMod implements ModInitializer {
 
     private void resetSlot() {
         if (swapped && previousSlot != -1 && mc.player != null) {
-            mc.player.getInventory().selectedSlot = previousSlot;
+            setSlot(previousSlot);
             swapped = false;
             previousSlot = -1;
             axeSlot = -1;
