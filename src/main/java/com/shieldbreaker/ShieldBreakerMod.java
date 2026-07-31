@@ -23,7 +23,7 @@ public class ShieldBreakerMod implements ModInitializer {
     private static KeyBinding overlayKey;
     private static final MinecraftClient mc = MinecraftClient.getInstance();
     private static final double FOV = 90.0;
-    private static final double RANGE = 2.8;
+    private static final double RANGE = 3.0;
 
     @Override
     public void onInitialize() {
