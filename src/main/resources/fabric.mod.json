@@ -9,11 +9,10 @@
     "entrypoints": {
         "main": ["com.shieldbreaker.ShieldBreakerMod"]
     },
+    "accessWidener": "shieldbreaker.accesswidener",
     "depends": {
         "fabricloader": ">=0.16.0",
         "minecraft": "~1.21.8",
         "java": ">=21"
     }
 }
-
-"accessWidener": "shieldbreaker.accesswidener"
