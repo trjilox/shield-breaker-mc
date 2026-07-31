@@ -1,4 +1,4 @@
-pluginManagement {
+vpluginManagement {
     repositories {
         maven {
             name = 'Fabric'
